@@ -1,0 +1,27 @@
+# X Events are Most Harmful to Population Health, Y Events have the Greatest Economic Consequences
+Synopsis (in less than 10 sentences): I analyzed X data with Y and Z methods and found A and B.
+
+## Data Processing
+How data were loaded in R and processed for analysis, starting from the raw file containing the data (the original .csv.bz2 file), i.e. description and justification for any data transformations
+
+## Results
+Presenting main results with at least one figure containing a plot but no more than three and showing code throughout echo = TRUE. All code reproducible.
+
+### Which types of events are most harmful to population health?
+...
+
+### Which types of events have the greatest economic consequences?
+...
+
+### Figure(s) with descriptive captions (i.e. a description near the figure of what is happening in the figure)
+...
+
+### Rpubs URL
+...
+
+### References
+...
+
+
+
+
