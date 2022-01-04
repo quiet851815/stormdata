@@ -1,26 +1,178 @@
-# X Events are Most Harmful to Population Health, Y Events have the Greatest Economic Consequences
-Synopsis (in less than 10 sentences): I analyzed X data with Y and Z methods and found A and B.
+# Tornadoes and Hail are Among the Most Harmful Weather Events to Population Health & the Economy
+Synopsis: I analyzed 45 years of National Weather Service data, including close to 1 million weather events (902,297 to be exact), including 985 types of events from high surf advisories to tornadoes. Many of the event types overlap or duplicate other types, and inconsistent classification is a weakness of this analysis. 
+
+Still, this analysis generates important findings by calculating the events most harmful to population health and most costly to the economy. Specifically, it calculates the events with the most fatalities and injuries and the events with the greatest property damage and crop damage. In both cases, calculations focus on events with above-average harms and costs. In the economic consequence calculations, events are further filtered to those with clear costs in the thousands, millions, and billions. Inconsistent classification of costs is a secondary weakness. 
+
+The analysis found that tornadoes are most harmful to population health, followed by heat, flooding, and cold, and tornadoes and hail are most costly to the economy, followed by floods and winds.
 
 ## Data Processing
 How data were loaded in R and processed for analysis, starting from the raw file containing the data (the original .csv.bz2 file), i.e. description and justification for any data transformations
 
+```{r data_processing, echo=TRUE}
+
+library(dplyr) # for use in data transformations that happen later. Data need to be handled differently in population health and economic cost sections.
+
+#load data into R with read.csv
+stormdata <- read.csv("repdata_data_StormData.csv.bz2")
+
+#calculate time range of storms - difference of 45 years
+min(stormdata$BGN_DATE) # 1/1/1966 0:00:00
+max(stormdata$BGN_DATE) # 9/9/2011 0:00:00
+
+#calculate number of events
+nrow(stormdata) #902297
+
+#get event types - 985 of them, but many are overlapping or duplication, not shown to save on html scrolling
+#distinct(stormdata, EVTYPE) 
+
+```
+
+
 ## Results
 Presenting main results with at least one figure containing a plot but no more than three and showing code throughout echo = TRUE. All code reproducible.
 
+Results for population health (fatalities and injuries) and economic consequences (property damage and crop damage costs) are handled one at a time below in subsections of this results section. In summary, however, tornadoes are most harmful to population health, followed by heat, flooding, and cold, and tornadoes and hail are most costly to the economy, followed by floods and winds.
+
 ### Which types of events are most harmful to population health?
-...
+Population health is measured by the numbers of fatalities and injuries.
+
+```{r event_fatalities, echo=TRUE}
+
+# calculate total number of fatalities for events with 1 or more fatalities - 15,145 fatalities in 6,974 events
+total_fatalities <- stormdata %>%
+  filter(FATALITIES > 0) %>%
+  summarise(fatalities = sum(FATALITIES), n = n())
+
+# calculate fatalities by event type for events with 1 or more fatalities - there are 168 event types, many derivations of each other
+event_fatalities <- stormdata %>%
+  filter(FATALITIES > 0) %>%
+  group_by(EVTYPE) %>%
+  summarise(fatalities = sum(FATALITIES), n = n()) %>%
+  arrange(desc(fatalities))
+
+#calculate mean fatalities by event type - not shown to save html scrolling
+#mean(event_fatalities$fatalities) # 90.14881 fatalities
+
+# calculate fatalities by event type for events with above average numbers of fatalities
+event_fatalities <- stormdata %>%
+  filter(FATALITIES > 0) %>%
+  group_by(EVTYPE) %>%
+  summarise(fatalities = sum(FATALITIES), n = n()) %>%
+  filter(fatalities > mean(fatalities)) %>%
+  arrange(desc(fatalities))
+
+```
+
+The National Weather Service doesn't categorize storms consistently across states or the entirety of it's storm data set. However, conclusions can be drawn from the categories that do appear. Tornadoes cause by far the most fatalities, followed by excessive heat, flooding, and lightning and thunderstorms. Winter storms that include excessive cold, wind, or snow are also a danger.
+
+```{r event_injuries, echo=TRUE}
+
+# calculate total number of injuries for events with 1 or more injuries - 140,528 injuries in 17,604 events
+total_injuries <- stormdata %>%
+  filter(INJURIES > 0) %>%
+  summarise(injuries = sum(INJURIES), n = n())
+
+# calculate injuries by event type for events with 1 or more injuries - there are 158 event types, many derivations of each other
+event_injuries <- stormdata %>%
+  filter(INJURIES > 0) %>%
+  group_by(EVTYPE) %>%
+  summarise(injuries = sum(INJURIES), n = n()) %>%
+  arrange(desc(injuries))
+
+#calculate mean injuries by event type  - not shown to save html scrolling
+#mean(event_injuries$injuries) # 889.4177 injuries
+
+# calculate injuries by event type for events with above average numbers of injuries
+event_injuries <- stormdata %>%
+  filter(INJURIES > 0) %>%
+  group_by(EVTYPE) %>%
+  summarise(injuries = sum(INJURIES), n = n()) %>%
+  filter(injuries > mean(injuries)) %>%
+  arrange(desc(injuries))
+
+```
+
+Injuries by event type follow similar patterns as fatalities. Tornadoes cause the most injuries, followed by lighting and thunderstorms, flooding, and excessive heat. Winter storms that include excessive cold, wind, or snow are again a danger as well. A more through categorization would yield exact numbers, but the pattern is nonetheless clear as is.
 
 ### Which types of events have the greatest economic consequences?
-...
+Economic consequences are measured by property and crop damage costs.
+
+```{r property_damaage, echo=TRUE}
+
+#See distinct cost codes - there are incorrect codes beyond the correct K, M, B for thousands, millions, and billions - not shown to reduce html scrolling
+#distinct(stormdata, PROPDMGEXP) 
+
+#calculate total number of events with property damage - 239,174  - not shown to save html scrolling
+#stormdata %>%
+#  filter(PROPDMG > 0) %>%
+#  summarise(n = n())
+
+#calculate property damage by event type for events with damage in the thousands, millions, or billions and above-average damage costs
+#cost data are transformed based on the cost damage category they are in (thousands, millions, or billions in the mutate)
+property_damage <- stormdata %>%
+  filter(PROPDMG > 0 & PROPDMGEXP %in% c("K", "M", "B")) %>%
+  mutate(PROPDMG_MLTPLD = ifelse(PROPDMGEXP == "K", PROPDMG * 1000, 
+                          ifelse(PROPDMGEXP == "M", PROPDMG * 1000000, 
+                          ifelse(PROPDMGEXP == "B", PROPDMG * 1000000000, NA)))) %>% 
+  group_by(EVTYPE) %>%
+  summarise(property_damage = sum(PROPDMG), n = n()) %>%
+  filter(property_damage > mean(property_damage)) %>%
+  arrange(desc(property_damage))
+
+```
+
+The National Weather Service doesn't consistently classify damage costs, which makes calculating them by event type even more challenging. However, measuring property damage costs for those events do have clearly marked costs in the thousands, millions, or billions of dollars can still be instructive. Those measures show that Tornadoes are also the most costly weather event, followed by floods, and other strong winds, including winds from thunderstorms. In contrast to the population health results, cold and heat are relatively less damaging to property, but ice/snow and wildfires are among the above-average damaging weather events tracked.
+
+```{r crop_damage, echo=TRUE}
+
+#calculate total number of events with crop damage - 220,099 - not shown to save html scrolling
+#stormdata %>%
+#  filter(CROPDMG > 0) %>%
+#  summarise(n = n())
+
+#calculate crop damage by event type for events with damage in the thousands, millions, or billions and above-average damage costs
+#cost data are transformed based on the cost damage category they are in (thousands, millions, or billions in the mutate)
+crop_damage <- stormdata %>%
+  filter(CROPDMG > 0 & CROPDMGEXP %in% c("K", "M", "B")) %>%
+  mutate(CROPDMG_MLTPLD = ifelse(CROPDMGEXP == "K", CROPDMG * 1000, 
+                          ifelse(CROPDMGEXP == "M", CROPDMG * 1000000, 
+                          ifelse(CROPDMGEXP == "B", CROPDMG * 1000000000, NA)))) %>% 
+  group_by(EVTYPE) %>%
+  summarise(crop_damage = sum(CROPDMG), n = n()) %>%
+  filter(crop_damage > mean(crop_damage)) %>%
+  arrange(desc(crop_damage))
+
+```
+
+Hail is the number one weather event damaging crops.Too much or too little water (rain/flooding and drought) are also highly damaging, as are winds from tornadoes, thunderstorms (TSTM Wind), or otherwise.
+
 
 ### Figure(s) with descriptive captions (i.e. a description near the figure of what is happening in the figure)
-...
 
-### Rpubs URL
-...
+```{r figures, echo=TRUE}
+
+#scatterplot using https://r-coder.com/plot-r/
+plot(crop_damage$crop_damage,crop_damage$n,
+       main="Figure 1. Crop Damage ($) and Crop-Damaging Events",
+       xlab="Crop Damage in Dollars",
+       ylab="Number of Crop-Damaging Events")
+
+#label just the top 4
+selected <- c(1, 2, 3, 4)
+
+#labels
+text(crop_damage$crop_damage[selected],crop_damage$n[selected],
+     labels=crop_damage$EVTYPE[selected],
+     cex=0.9, pos = 2, col = "black")
+
+```
+
+Figure 1 Caption. The scatterplot above shows crop-damaging events being plotted by damage in dollars on the x-axis and number of events in the last 45 years on the y axis. You can see that hail has by far the most events and highest costs.
 
 ### References
-...
+Created by Chris Ringewald for Reproducible Research Week 4, Course Project 2, 1/3/2022
+Original data: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2
+About the data: https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf, https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf
 
 
 
